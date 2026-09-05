@@ -1,9 +1,7 @@
 """
 NDB — Nile Digital Bank
-Customer Service Analytics Dashboard — ENHANCED v2.0
-MBA Program — AI in Business | Arab Academy
-Task 2: Data Analytics Dashboard
-All 4 Analytics Types: Descriptive | Diagnostic | Predictive | Prescriptive
+Customer Service Analytics Dashboard
+Analytics Types: Descriptive | Diagnostic | Predictive | Prescriptive
 """
 
 import streamlit as st
@@ -43,7 +41,7 @@ st.markdown(f"""
 # ── Data Loading ────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
-    db_path = r'D:\Case Study\0\NDB_Database.sqlite'
+    db_path = os.path.join(os.path.dirname(__file__), 'NDB_Clean_Dataset', 'NDB_Database.sqlite')
     conn = sqlite3.connect(db_path)
     tbls = {}
     for t in ['customers','accounts','transactions','interactions',
