@@ -126,7 +126,7 @@ with st.sidebar:
     <div style='text-align:center;padding:10px;'>
       <h2 style='color:{GOLD};margin:0;'>🏦 NDB</h2>
       <p style='color:white;margin:0;font-size:13px;'>Nile Digital Bank</p>
-      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard v2.0</p>
+      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard</p>
     </div><hr style='border-color:{TEAL};'>""", unsafe_allow_html=True)
 
     page = st.radio("📊 Navigation", [
@@ -151,8 +151,6 @@ with st.sidebar:
     st.markdown(f"""
     <hr style='border-color:{TEAL};'>
     <div style='color:{GRAY};font-size:11px;text-align:center;'>
-      MBA — AI in Business<br>Arab Academy | Sep 2026<br>
-      11 tables | ~106K records
     </div>""", unsafe_allow_html=True)
 
 # ── Computed globals ────────────────────────────────────────────────
