@@ -126,7 +126,7 @@ with st.sidebar:
     <div style='text-align:center;padding:10px;'>
       <h2 style='color:{GOLD};margin:0;'>🏦 NDB</h2>
       <p style='color:white;margin:0;font-size:13px;'>Nile Digital Bank</p>
-      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard</p>
+      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard v2.0</p>
     </div><hr style='border-color:{TEAL};'>""", unsafe_allow_html=True)
 
     page = st.radio("📊 Navigation", [
@@ -151,6 +151,8 @@ with st.sidebar:
     st.markdown(f"""
     <hr style='border-color:{TEAL};'>
     <div style='color:{GRAY};font-size:11px;text-align:center;'>
+      MBA — AI in Business<br>Arab Academy | Sep 2026<br>
+      11 tables | ~106K records
     </div>""", unsafe_allow_html=True)
 
 # ── Computed globals ────────────────────────────────────────────────
@@ -312,17 +314,14 @@ elif page == "⏰ PP2 — Waiting Times":
         st.plotly_chart(fig,use_container_width=True)
     c1,c2=st.columns(2)
     with c1:
-        st=intr['Interaction_Status'].value_counts()
-        fig=px.pie(values=st.values,names=st.index,
-                   color=st.index,
+        status_counts=intr['Interaction_Status'].value_counts()
+        fig=px.pie(values=status_counts.values,names=status_counts.index,
+                   color=status_counts.index,
                    color_discrete_map={'Resolved':GREEN,'Escalated':GOLD,
                                         'Abandoned':RED,'Pending':TEAL},
                    title="Interaction Status Distribution",hole=0.4)
         fig.update_layout(height=340)
-        st_obj=st  # rename to avoid conflict
-        st_plot=fig
-        import streamlit as st2
-        st2.plotly_chart(fig,use_container_width=True)
+        st.plotly_chart(fig,use_container_width=True)
     with c2:
         fig=px.histogram(intr,x='Wait_Time_Minutes',nbins=30,
                          color='Is_Peak_Hour',
@@ -330,7 +329,7 @@ elif page == "⏰ PP2 — Waiting Times":
                          barmode='overlay',opacity=0.7,
                          title="Wait Time: Peak vs Off-Peak")
         fig.update_layout(height=340)
-        import streamlit as stx; stx.plotly_chart(fig,use_container_width=True)
+        st.plotly_chart(fig,use_container_width=True)
 
 elif page == "💰 PP3 — Cost Analysis":
     st.markdown(f"<h2 style='color:{RED};'>💰 Pain Point 3: High Cost Per Interaction</h2>",unsafe_allow_html=True)
@@ -1016,16 +1015,25 @@ elif page == "🗺️ Geographic Analysis":
     st.divider()
     c1,c2=st.columns(2)
     with c1:
-        br_v=br.dropna(subset=['Latitude','Longitude'])
-        fig=px.scatter_mapbox(br_v,lat='Latitude',lon='Longitude',
-            color='CSAT_Score',size='Avg_Daily_Footfall',
-            hover_name='Branch_Name',
-            hover_data=['Branch_Type','Governorate','Avg_Wait_Time_Minutes','FCR_Rate'],
-            color_continuous_scale='RdYlGn',size_max=20,zoom=5,
-            mapbox_style='carto-positron',
-            title="Branch Network — CSAT Score & Footfall")
-        fig.update_layout(height=480,coloraxis_colorbar_title="CSAT")
-        st.plotly_chart(fig,use_container_width=True)
+        br_v=br.copy()
+        br_v['Latitude']=pd.to_numeric(br_v['Latitude'],errors='coerce')
+        br_v['Longitude']=pd.to_numeric(br_v['Longitude'],errors='coerce')
+        br_v['CSAT_Score']=pd.to_numeric(br_v['CSAT_Score'],errors='coerce')
+        br_v['Avg_Daily_Footfall']=pd.to_numeric(br_v['Avg_Daily_Footfall'],errors='coerce').fillna(100)
+        br_v=br_v.dropna(subset=['Latitude','Longitude','CSAT_Score'])
+        if len(br_v)>0:
+            fig=px.scatter_mapbox(br_v,lat='Latitude',lon='Longitude',
+                color='CSAT_Score',size='Avg_Daily_Footfall',
+                hover_name='Branch_Name',
+                hover_data=['Branch_Type','Governorate'],
+                color_continuous_scale='RdYlGn',size_max=20,zoom=5,
+                mapbox_style='carto-positron',
+                title="Branch Network — CSAT Score & Footfall")
+            fig.update_layout(height=480,coloraxis_colorbar_title="CSAT")
+            st.plotly_chart(fig,use_container_width=True)
+        else:
+            st.info("Map data not available — showing branch table instead")
+            st.dataframe(br[['Branch_Name','Governorate','CSAT_Score','FCR_Rate']].head(20),use_container_width=True)
     with c2:
         gov=br.groupby('Governorate').agg(
             Count=('Branch_ID','count'),
