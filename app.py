@@ -173,7 +173,7 @@ annual_sv  = monthly_sv * 12
 # ══════════════════════════════════════════════════════════════════
 if page == "🏠 Executive Overview":
     st.markdown(f"<h1 style='color:{NAVY};'>🏦 NDB — Executive Analytics Overview</h1>", unsafe_allow_html=True)
-    st.caption("Chatbots for Customer Service Automation | MBA AI in Business | Arab Academy 2026")
+    st.caption("Chatbots for Customer Service Automation")
 
     c1,c2,c3,c4,c5,c6 = st.columns(6)
     c1.metric("Total Customers","500,000","NDB Scale")
@@ -1020,24 +1020,16 @@ elif page == "🗺️ Geographic Analysis":
         br_v['Avg_Daily_Footfall']=pd.to_numeric(br_v['Avg_Daily_Footfall'],errors='coerce').fillna(100)
         br_v=br_v.dropna(subset=['Latitude','Longitude','CSAT_Score'])
         if len(br_v)>0:
-            fig=px.scatter_geo(br_v,lat='Latitude',lon='Longitude',
+            fig=px.scatter_mapbox(br_v,lat='Latitude',lon='Longitude',
                 color='CSAT_Score',size='Avg_Daily_Footfall',
                 hover_name='Branch_Name',
                 hover_data={'Branch_Type':True,'Governorate':True,'CSAT_Score':True,'Latitude':False,'Longitude':False},
-                color_continuous_scale='RdYlGn',size_max=20,
+                color_continuous_scale='RdYlGn',size_max=25,
+                zoom=5.2,center=dict(lat=27.5,lon=30.5),
+                mapbox_style='open-street-map',
                 title='Branch Network — CSAT Score & Footfall')
-            fig.update_geos(
-                visible=True,resolution=50,
-                showcountries=True,countrycolor='lightgray',
-                showcoastlines=True,coastlinecolor='lightgray',
-                showland=True,landcolor='#F4F7FA',
-                showocean=True,oceancolor='#E8F4FD',
-                center=dict(lat=27.0,lon=30.0),
-                projection_scale=8)
-            fig.update_layout(height=480,coloraxis_colorbar_title='CSAT',
-                geo=dict(scope='africa',
-                         lataxis_range=[22,32],
-                         lonaxis_range=[24,37]))
+            fig.update_layout(height=580,coloraxis_colorbar_title='CSAT',
+                margin=dict(l=0,r=0,t=40,b=0))
             st.plotly_chart(fig,use_container_width=True)
         else:
             st.info('Map data not available — showing branch performance table')
