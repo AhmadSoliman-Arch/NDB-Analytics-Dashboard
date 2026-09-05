@@ -1020,18 +1020,28 @@ elif page == "🗺️ Geographic Analysis":
         br_v['Avg_Daily_Footfall']=pd.to_numeric(br_v['Avg_Daily_Footfall'],errors='coerce').fillna(100)
         br_v=br_v.dropna(subset=['Latitude','Longitude','CSAT_Score'])
         if len(br_v)>0:
-            fig=px.scatter_mapbox(br_v,lat='Latitude',lon='Longitude',
+            fig=px.scatter_geo(br_v,lat='Latitude',lon='Longitude',
                 color='CSAT_Score',size='Avg_Daily_Footfall',
                 hover_name='Branch_Name',
-                hover_data=['Branch_Type','Governorate'],
-                color_continuous_scale='RdYlGn',size_max=20,zoom=5,
-                mapbox_style='carto-positron',
-                title="Branch Network — CSAT Score & Footfall")
-            fig.update_layout(height=480,coloraxis_colorbar_title="CSAT")
+                hover_data={'Branch_Type':True,'Governorate':True,'CSAT_Score':True,'Latitude':False,'Longitude':False},
+                color_continuous_scale='RdYlGn',size_max=20,
+                title='Branch Network — CSAT Score & Footfall')
+            fig.update_geos(
+                visible=True,resolution=50,
+                showcountries=True,countrycolor='lightgray',
+                showcoastlines=True,coastlinecolor='lightgray',
+                showland=True,landcolor='#F4F7FA',
+                showocean=True,oceancolor='#E8F4FD',
+                center=dict(lat=27.0,lon=30.0),
+                projection_scale=8)
+            fig.update_layout(height=480,coloraxis_colorbar_title='CSAT',
+                geo=dict(scope='africa',
+                         lataxis_range=[22,32],
+                         lonaxis_range=[24,37]))
             st.plotly_chart(fig,use_container_width=True)
         else:
-            st.info("Map data not available — showing branch table instead")
-            st.dataframe(br[['Branch_Name','Governorate','CSAT_Score','FCR_Rate']].head(20),use_container_width=True)
+            st.info('Map data not available — showing branch performance table')
+            st.dataframe(br[['Branch_Name','Governorate','CSAT_Score','FCR_Rate','Avg_Wait_Time_Minutes']].head(20),use_container_width=True)
     with c2:
         gov=br.groupby('Governorate').agg(
             Count=('Branch_ID','count'),
