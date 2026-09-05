@@ -1,7 +1,9 @@
 """
 NDB — Nile Digital Bank
-Customer Service Analytics Dashboard
-Analytics Types: Descriptive | Diagnostic | Predictive | Prescriptive
+Customer Service Analytics Dashboard — ENHANCED v2.0
+MBA Program — AI in Business | Arab Academy
+Task 2: Data Analytics Dashboard
+All 4 Analytics Types: Descriptive | Diagnostic | Predictive | Prescriptive
 """
 
 import streamlit as st
@@ -126,7 +128,7 @@ with st.sidebar:
     <div style='text-align:center;padding:10px;'>
       <h2 style='color:{GOLD};margin:0;'>🏦 NDB</h2>
       <p style='color:white;margin:0;font-size:13px;'>Nile Digital Bank</p>
-      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard</p>
+      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard v2.0</p>
     </div><hr style='border-color:{TEAL};'>""", unsafe_allow_html=True)
 
     page = st.radio("📊 Navigation", [
@@ -151,6 +153,8 @@ with st.sidebar:
     st.markdown(f"""
     <hr style='border-color:{TEAL};'>
     <div style='color:{GRAY};font-size:11px;text-align:center;'>
+      MBA — AI in Business<br>Arab Academy | Sep 2026<br>
+      11 tables | ~106K records
     </div>""", unsafe_allow_html=True)
 
 # ── Computed globals ────────────────────────────────────────────────
@@ -173,7 +177,7 @@ annual_sv  = monthly_sv * 12
 # ══════════════════════════════════════════════════════════════════
 if page == "🏠 Executive Overview":
     st.markdown(f"<h1 style='color:{NAVY};'>🏦 NDB — Executive Analytics Overview</h1>", unsafe_allow_html=True)
-    st.caption("Chatbots for Customer Service Automation")
+    st.caption("Chatbots for Customer Service Automation | MBA AI in Business | Arab Academy 2026")
 
     c1,c2,c3,c4,c5,c6 = st.columns(6)
     c1.metric("Total Customers","500,000","NDB Scale")
@@ -1020,14 +1024,23 @@ elif page == "🗺️ Geographic Analysis":
         br_v['Avg_Daily_Footfall']=pd.to_numeric(br_v['Avg_Daily_Footfall'],errors='coerce').fillna(100)
         br_v=br_v.dropna(subset=['Latitude','Longitude','CSAT_Score'])
         if len(br_v)>0:
-            fig=px.scatter_mapbox(br_v,lat='Latitude',lon='Longitude',
+            fig=px.scatter_geo(br_v,lat='Latitude',lon='Longitude',
                 color='CSAT_Score',size='Avg_Daily_Footfall',
                 hover_name='Branch_Name',
-                hover_data={'Branch_Type':True,'Governorate':True,'CSAT_Score':True,'Latitude':False,'Longitude':False},
+                hover_data={'Branch_Type':True,'Governorate':True,
+                            'CSAT_Score':True,'Latitude':False,'Longitude':False},
                 color_continuous_scale='RdYlGn',size_max=25,
-                zoom=5.2,center=dict(lat=27.5,lon=30.5),
-                mapbox_style='open-street-map',
+                projection='natural earth',
                 title='Branch Network — CSAT Score & Footfall')
+            fig.update_geos(
+                showcountries=True,countrycolor='#AAAAAA',
+                showcoastlines=True,coastlinecolor='#AAAAAA',
+                showland=True,landcolor='#F4F7FA',
+                showocean=True,oceancolor='#D6EAF8',
+                showrivers=True,rivercolor='#AED6F1',
+                lataxis_range=[21,32],
+                lonaxis_range=[24,38],
+                bgcolor='white')
             fig.update_layout(height=580,coloraxis_colorbar_title='CSAT',
                 margin=dict(l=0,r=0,t=40,b=0))
             st.plotly_chart(fig,use_container_width=True)
@@ -1307,5 +1320,7 @@ elif page == "⚙️ ERP & Process Flow":
 st.markdown("---")
 st.markdown(f"""
 <div style='text-align:center;color:{GRAY};font-size:12px;'>
-NDB — Nile Digital Bank | Analytics Dashboard |
+NDB — Nile Digital Bank | Analytics Dashboard v2.0 |
+MBA Program — AI in Business | Arab Academy for Science, Technology & Maritime Transport |
+Task 2: Data Analytics | September 2026
 </div>""", unsafe_allow_html=True)
