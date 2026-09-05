@@ -1,9 +1,7 @@
 """
 NDB — Nile Digital Bank
-Customer Service Analytics Dashboard — ENHANCED v2.0
-MBA Program — AI in Business | Arab Academy
-Task 2: Data Analytics Dashboard
-All 4 Analytics Types: Descriptive | Diagnostic | Predictive | Prescriptive
+Customer Service Analytics Dashboard
+Analytics Types: Descriptive | Diagnostic | Predictive | Prescriptive
 """
 
 import streamlit as st
@@ -128,7 +126,7 @@ with st.sidebar:
     <div style='text-align:center;padding:10px;'>
       <h2 style='color:{GOLD};margin:0;'>🏦 NDB</h2>
       <p style='color:white;margin:0;font-size:13px;'>Nile Digital Bank</p>
-      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard v2.0</p>
+      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard </p>
     </div><hr style='border-color:{TEAL};'>""", unsafe_allow_html=True)
 
     page = st.radio("📊 Navigation", [
@@ -153,8 +151,6 @@ with st.sidebar:
     st.markdown(f"""
     <hr style='border-color:{TEAL};'>
     <div style='color:{GRAY};font-size:11px;text-align:center;'>
-      MBA — AI in Business<br>Arab Academy | Sep 2026<br>
-      11 tables | ~106K records
     </div>""", unsafe_allow_html=True)
 
 # ── Computed globals ────────────────────────────────────────────────
@@ -177,7 +173,7 @@ annual_sv  = monthly_sv * 12
 # ══════════════════════════════════════════════════════════════════
 if page == "🏠 Executive Overview":
     st.markdown(f"<h1 style='color:{NAVY};'>🏦 NDB — Executive Analytics Overview</h1>", unsafe_allow_html=True)
-    st.caption("Chatbots for Customer Service Automation | MBA AI in Business | Arab Academy 2026")
+    st.caption("Chatbots for Customer Service Automation")
 
     c1,c2,c3,c4,c5,c6 = st.columns(6)
     c1.metric("Total Customers","500,000","NDB Scale")
@@ -1320,7 +1316,5 @@ elif page == "⚙️ ERP & Process Flow":
 st.markdown("---")
 st.markdown(f"""
 <div style='text-align:center;color:{GRAY};font-size:12px;'>
-NDB — Nile Digital Bank | Analytics Dashboard v2.0 |
-MBA Program — AI in Business | Arab Academy for Science, Technology & Maritime Transport |
-Task 2: Data Analytics | September 2026
+NDB — Nile Digital Bank | Analytics Dashboard |
 </div>""", unsafe_allow_html=True)
