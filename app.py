@@ -1315,14 +1315,14 @@ elif page == "⚙️ ERP & Process Flow":
 
 
 # ══════════════════════════════════════════════════════════════════
-# PAGE — SIMULATION & SCENARIOS (Task 3)
+# PAGE — SIMULATION & SCENARIOS
 # ══════════════════════════════════════════════════════════════════
 elif page == "🔬 Simulation & Scenarios":
     import simpy, json, os, math as _math
 
     st.markdown(f"<h2 style='color:{NAVY};'>🔬 Simulation & Scenarios — M/M/c/K Queuing Model</h2>",
                 unsafe_allow_html=True)
-    st.caption("SimPy Discrete-Event Simulation | 30 Days × 3 Runs | Calibrated to Task 2 KPIs | Task 3")
+    st.caption("SimPy Discrete-Event Simulation | 30 Days × 3 Runs | Calibrated to KPIs |")
 
     PEAK_HOURS_SIM = [11,12,13,17,18,19,20]
 
@@ -1472,7 +1472,7 @@ elif page == "🔬 Simulation & Scenarios":
             defl_pct    = counters['chatbot_n'] / max(counters['arrived'], 1) * 100
             # Analytical cost (consistent with notebook)
             mo_cost    = sim_vol*(sim_defl*sim_cb_cost+(1-sim_defl)*49.95)
-            # Fixed Task 2 baseline = 125,000 x EGP 49.95 = EGP 6,243,750
+            # Fixed Data Analytcis baseline = 125,000 x EGP 49.95 = EGP 6,243,750
             mo_saving  = (125000*49.95) - mo_cost
             ann_saving = mo_saving * 12
             if sim_defl == 0:
@@ -1561,7 +1561,7 @@ elif page == "🔬 Simulation & Scenarios":
         st.subheader("3-Scenario Comparison — A (Baseline) | B (Chatbot) | C (Optimized)")
         if sim_results:
             sc_cfg = [
-                ("A","Baseline — No Chatbot",      RED,   "45 agents | 0% deflection | Task 2 calibrated"),
+                ("A","Baseline — No Chatbot",      RED,   "45 agents | 0% deflection | Data Analytcis calibrated"),
                 ("B","Chatbot Deployed",            TEAL,  "45 agents | 65.9% deflection | SimPy simulated"),
                 ("C","Optimized Model",             GREEN, "38 agents | 75% deflection | SimPy + RPA"),
             ]
@@ -1576,12 +1576,12 @@ elif page == "🔬 Simulation & Scenarios":
                             color:white;margin-bottom:8px;'>
                 <b style='font-size:14px;'>{lbl}</b><br>
                 <small style='opacity:0.85;'>{desc}</small><br><br>
-                ⏱️ Peak Wait: <b>{r['avg_peak_wait_min']} min</b><br>
-                🚪 Abandonment: <b>{r['abandon_rate_pct']}%</b><br>
-                🎯 FCR Rate: <b>{r['fcr_rate_pct']}%</b><br>
-                📋 SLA: <b>{r['sla_compliance_pct']}%</b><br>
-                💰 Monthly Cost: <b>EGP {r['monthly_cost_egp']/1e6:.2f}M</b><br>
-                💹 Annual Saving: <b>EGP {r['annual_saving_egp']/1e6:.1f}M</b>
+                ⏱️ Peak Wait: <b>{r.get('avg_peak_wait_min',0)} min</b><br>
+                🚪 Abandonment: <b>{r.get('abandon_rate_pct',0)}%</b><br>
+                🎯 FCR Rate: <b>{r.get('fcr_rate_pct',0)}%</b><br>
+                📋 SLA: <b>{r.get('sla_compliance_pct','N/A')}%</b><br>
+                💰 Monthly Cost: <b>EGP {r.get('monthly_cost_egp',0)/1e6:.2f}M</b><br>
+                💹 Annual Saving: <b>EGP {r.get('annual_saving_egp',0)/1e6:.1f}M</b>
                 </div>""", unsafe_allow_html=True)
 
             st.divider()
@@ -1593,14 +1593,14 @@ elif page == "🔬 Simulation & Scenarios":
                 fig = go.Figure()
                 for sc,lbl,col_c in [("A","Baseline",RED),("B","Chatbot",TEAL),("C","Optimized",GREEN)]:
                     fig.add_trace(go.Bar(name=lbl, x=kpis_l,
-                                        y=[sim_results[sc][k] for k in kpis_k],
+                                        y=[sim_results[sc].get(k,0) for k in kpis_k],
                                         marker_color=col_c, opacity=0.85))
                 fig.update_layout(title="Core KPI Comparison — A vs B vs C",
                                   barmode="group", height=400)
                 st.plotly_chart(fig, use_container_width=True)
             with c2:
                 sc_l  = ["A (Baseline)","B (Chatbot)","C (Optimized)"]
-                mo_cs = [sim_results[sc]["monthly_cost_egp"]/1e6 for sc in ["A","B","C"]]
+                mo_cs = [sim_results[sc].get("monthly_cost_egp",0)/1e6 for sc in ["A","B","C"]]
                 fig   = px.bar(x=sc_l, y=mo_cs, color=sc_l,
                                color_discrete_sequence=[RED,TEAL,GREEN],
                                title="Monthly Service Cost by Scenario (EGP M)",
@@ -1635,7 +1635,7 @@ elif page == "🔬 Simulation & Scenarios":
                     sim_results["B"]["sla_compliance_pct"],
                     sim_results["B"]["agent_utilization"],
                     round(sim_results["B"]["monthly_cost_egp"]/1e6,2),
-                    round(sim_results["B"]["annual_saving_egp"]/1e6,1),
+                    round(sim_results["B"].get("annual_saving_egp",0)/1e6,1),
                 ],
                 "Scenario C": [
                     sim_results["C"]["avg_peak_wait_min"],
@@ -1645,7 +1645,7 @@ elif page == "🔬 Simulation & Scenarios":
                     sim_results["C"]["sla_compliance_pct"],
                     sim_results["C"]["agent_utilization"],
                     round(sim_results["C"]["monthly_cost_egp"]/1e6,2),
-                    round(sim_results["C"]["annual_saving_egp"]/1e6,1),
+                    round(sim_results["C"].get("annual_saving_egp",0)/1e6,1),
                 ],
             }
             comp_df = pd.DataFrame(comp_data)
@@ -1655,8 +1655,8 @@ elif page == "🔬 Simulation & Scenarios":
             st.subheader("📈 5-Year Financial Projection")
             years = list(range(6))
             inv   = 4.5
-            ann_b = sim_results["B"]["annual_saving_egp"]/1e6
-            ann_c = sim_results["C"]["annual_saving_egp"]/1e6
+            ann_b = sim_results["B"].get("annual_saving_egp",0)/1e6
+            ann_c = sim_results["C"].get("annual_saving_egp",0)/1e6
             cum_b = [-inv]+[ann_b*y-0.5*max(y-1,0)-inv for y in range(1,6)]
             cum_c = [-inv]+[ann_c*y-0.5*max(y-1,0)-inv for y in range(1,6)]
             fig = go.Figure()
@@ -1775,7 +1775,7 @@ elif page == "🔬 Simulation & Scenarios":
                         "Chatbot Service":     "Exponential(μ=0.5 min) — near-instant",
                         "Customer Patience":   "Exponential(μ=10 peak / 20 off-peak min)",
                         "Simulation Duration": "30 days × 3 runs averaged",
-                        "Scenario A Source":   "Task 2 observed data — MLE calibrated",
+                        "Scenario A Source":   "Data Analytics observed data — MLE calibrated",
                         "Scenario B":          "65.9% deflection | 45 agents | SimPy simulated",
                         "Scenario C":          "75% deflection | 38 agents | SimPy + RPA model",
                         "Monthly Volume":      "125,000 interactions",
