@@ -1333,7 +1333,6 @@ elif page == "🔬 Simulation & Scenarios":
     QUEUE_PATH   = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 'simulation_results','queue_data.json')
 
-    @st.cache_data
     def load_sim_data():
         try:
             with open(RESULTS_PATH) as f: results = json.load(f)
