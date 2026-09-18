@@ -1,0 +1,4 @@
+scenario,label,description,n_agents,deflection_pct,avg_wait_min,avg_peak_wait_min,avg_offpeak_wait,abandon_rate_pct,chatbot_defl_pct,fcr_rate_pct,sla_compliance_pct,agent_utilization,monthly_volume,monthly_cost_egp,annual_cost_egp,monthly_saving_egp,annual_saving_egp,positive_sentiment_pct,repeat_contact_pct,source,avg_offpk_wait
+A,Baseline (No Chatbot),"Current state — 45 agents, 0% chatbot deflection",45,0,7.5,8.2,5.4,9,0,56.2,60,140,125000,6243750,74925000,0,0,35,42.9,Task 2 observed data (calibrated),
+B,Chatbot Deployed,45 agents + 65.9% chatbot deflection,45,65.9,0,0.01,,0,65.79,80.43,80,31.4,125000,2458618,29503425,3785131,45421574,52,18.5,SimPy discrete-event simulation,0
+C,Optimized Model,38 agents + 75% deflection + RPA,38,75,0,0,,0,75.06,83.83,87.5,27.1,125000,1935937,23231250,4307812,51693750,68,12,SimPy discrete-event simulation,0
