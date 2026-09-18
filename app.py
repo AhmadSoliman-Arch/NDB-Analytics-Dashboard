@@ -126,7 +126,7 @@ with st.sidebar:
     <div style='text-align:center;padding:10px;'>
       <h2 style='color:{GOLD};margin:0;'>🏦 NDB</h2>
       <p style='color:white;margin:0;font-size:13px;'>Nile Digital Bank</p>
-      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard </p>
+      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard v3.0</p>
     </div><hr style='border-color:{TEAL};'>""", unsafe_allow_html=True)
 
     page = st.radio("📊 Navigation", [
@@ -146,6 +146,7 @@ with st.sidebar:
         "👥 Customer Segmentation",
         "💳 Loan & Card Portfolio",
         "⚙️ ERP & Process Flow",
+        "🔬 Simulation & Scenarios",
     ])
 
     st.markdown(f"""
@@ -312,14 +313,17 @@ elif page == "⏰ PP2 — Waiting Times":
         st.plotly_chart(fig,use_container_width=True)
     c1,c2=st.columns(2)
     with c1:
-        status_counts=intr['Interaction_Status'].value_counts()
-        fig=px.pie(values=status_counts.values,names=status_counts.index,
-                   color=status_counts.index,
+        st=intr['Interaction_Status'].value_counts()
+        fig=px.pie(values=st.values,names=st.index,
+                   color=st.index,
                    color_discrete_map={'Resolved':GREEN,'Escalated':GOLD,
                                         'Abandoned':RED,'Pending':TEAL},
                    title="Interaction Status Distribution",hole=0.4)
         fig.update_layout(height=340)
-        st.plotly_chart(fig,use_container_width=True)
+        st_obj=st  # rename to avoid conflict
+        st_plot=fig
+        import streamlit as st2
+        st2.plotly_chart(fig,use_container_width=True)
     with c2:
         fig=px.histogram(intr,x='Wait_Time_Minutes',nbins=30,
                          color='Is_Peak_Hour',
@@ -327,7 +331,7 @@ elif page == "⏰ PP2 — Waiting Times":
                          barmode='overlay',opacity=0.7,
                          title="Wait Time: Peak vs Off-Peak")
         fig.update_layout(height=340)
-        st.plotly_chart(fig,use_container_width=True)
+        import streamlit as stx; stx.plotly_chart(fig,use_container_width=True)
 
 elif page == "💰 PP3 — Cost Analysis":
     st.markdown(f"<h2 style='color:{RED};'>💰 Pain Point 3: High Cost Per Interaction</h2>",unsafe_allow_html=True)
@@ -1013,36 +1017,16 @@ elif page == "🗺️ Geographic Analysis":
     st.divider()
     c1,c2=st.columns(2)
     with c1:
-        br_v=br.copy()
-        br_v['Latitude']=pd.to_numeric(br_v['Latitude'],errors='coerce')
-        br_v['Longitude']=pd.to_numeric(br_v['Longitude'],errors='coerce')
-        br_v['CSAT_Score']=pd.to_numeric(br_v['CSAT_Score'],errors='coerce')
-        br_v['Avg_Daily_Footfall']=pd.to_numeric(br_v['Avg_Daily_Footfall'],errors='coerce').fillna(100)
-        br_v=br_v.dropna(subset=['Latitude','Longitude','CSAT_Score'])
-        if len(br_v)>0:
-            fig=px.scatter_geo(br_v,lat='Latitude',lon='Longitude',
-                color='CSAT_Score',size='Avg_Daily_Footfall',
-                hover_name='Branch_Name',
-                hover_data={'Branch_Type':True,'Governorate':True,
-                            'CSAT_Score':True,'Latitude':False,'Longitude':False},
-                color_continuous_scale='RdYlGn',size_max=25,
-                projection='natural earth',
-                title='Branch Network — CSAT Score & Footfall')
-            fig.update_geos(
-                showcountries=True,countrycolor='#AAAAAA',
-                showcoastlines=True,coastlinecolor='#AAAAAA',
-                showland=True,landcolor='#F4F7FA',
-                showocean=True,oceancolor='#D6EAF8',
-                showrivers=True,rivercolor='#AED6F1',
-                lataxis_range=[21,32],
-                lonaxis_range=[24,38],
-                bgcolor='white')
-            fig.update_layout(height=580,coloraxis_colorbar_title='CSAT',
-                margin=dict(l=0,r=0,t=40,b=0))
-            st.plotly_chart(fig,use_container_width=True)
-        else:
-            st.info('Map data not available — showing branch performance table')
-            st.dataframe(br[['Branch_Name','Governorate','CSAT_Score','FCR_Rate','Avg_Wait_Time_Minutes']].head(20),use_container_width=True)
+        br_v=br.dropna(subset=['Latitude','Longitude'])
+        fig=px.scatter_mapbox(br_v,lat='Latitude',lon='Longitude',
+            color='CSAT_Score',size='Avg_Daily_Footfall',
+            hover_name='Branch_Name',
+            hover_data=['Branch_Type','Governorate','Avg_Wait_Time_Minutes','FCR_Rate'],
+            color_continuous_scale='RdYlGn',size_max=20,zoom=5,
+            mapbox_style='carto-positron',
+            title="Branch Network — CSAT Score & Footfall")
+        fig.update_layout(height=480,coloraxis_colorbar_title="CSAT")
+        st.plotly_chart(fig,use_container_width=True)
     with c2:
         gov=br.groupby('Governorate').agg(
             Count=('Branch_ID','count'),
@@ -1311,6 +1295,345 @@ elif page == "⚙️ ERP & Process Flow":
                            'Working chatbot prototype','Test report + sign-off',
                            'Live production system','Monthly performance report']}
         st.dataframe(pd.DataFrame(sdlc_data),use_container_width=True,hide_index=True)
+
+
+# ══════════════════════════════════════════════════════════════════
+# PAGE — SIMULATION & SCENARIOS (Task 3)
+# ══════════════════════════════════════════════════════════════════
+elif page == "🔬 Simulation & Scenarios":
+    import simpy, json, os
+
+    st.markdown(f"<h2 style='color:{NAVY};'>🔬 Simulation & Scenarios — M/M/c/K Queuing Model</h2>",
+                unsafe_allow_html=True)
+    st.caption("SimPy Discrete-Event Simulation | 30 Days × 3 Runs | Calibrated to Task 2 KPIs | Task 3")
+
+    PEAK_HOURS = [11,12,13,17,18,19,20]
+
+    RESULTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'simulation_results','simulation_results.json')
+    SENS_PATH    = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'simulation_results','sensitivity_results.csv')
+    QUEUE_PATH   = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'simulation_results','queue_data.json')
+
+    @st.cache_data
+    def load_sim_data():
+        try:
+            with open(RESULTS_PATH) as f: results = json.load(f)
+            sens = pd.read_csv(SENS_PATH)
+            with open(QUEUE_PATH) as f:  queue   = json.load(f)
+            return results, sens, queue
+        except Exception as e:
+            st.error(f"Results not found: {e}")
+            return None, None, None
+
+    sim_results, sens_df, queue_data = load_sim_data()
+
+    tab1,tab2,tab3,tab4 = st.tabs([
+        "▶️ Run Simulation",
+        "📊 Scenario Comparison",
+        "🌡️ Sensitivity Analysis",
+        "📉 Queue Dynamics"])
+
+    # ── TAB 1: RUN SIMULATION ─────────────────────────────────────
+    with tab1:
+        st.subheader("Interactive Chatbot Impact Simulation")
+        st.markdown("Set parameters below and click **Run Simulation** to compute results.")
+
+        col1,col2,col3 = st.columns(3)
+        with col1:
+            sim_defl    = st.slider("Chatbot Deflection Rate (%)", 0, 100, 66, 1) / 100
+            sim_agents  = st.slider("Number of Agents", 20, 60, 45, 1)
+        with col2:
+            sim_vol     = st.number_input("Monthly Volume", 50000, 200000, 125000, 5000)
+            sim_handle  = st.slider("Avg Handle Time (min)", 5, 20, 10, 1)
+        with col3:
+            sim_cb_cost = st.slider("Chatbot Cost/Interaction (EGP)", 1, 10, 4, 1)
+            sim_days    = st.selectbox("Simulation Period", [7, 14, 30], index=2)
+
+        if st.button("▶️  Run Simulation", type="primary", use_container_width=True):
+            prog = st.progress(0, text="Initializing...")
+            np.random.seed(42)
+
+            env     = simpy.Environment()
+            agents  = simpy.Resource(env, capacity=sim_agents)
+            daily_v = sim_vol / 30
+
+            waits=[]; pk_waits=[]; costs=[]
+            arrived=0; abandoned=0; chatbot_n=0; human_n=0; q_log=[]
+
+            def get_rate(m, dv):
+                h = m // 60; base = dv/1440
+                if h in [11,12,13]:      return base*3.2
+                elif h in [17,18,19,20]: return base*2.8
+                elif 8<=h<=10:           return base*1.8
+                elif 14<=h<=16:          return base*1.5
+                elif 0<=h<=6:            return base*0.15
+                else:                    return base*0.5
+
+            def cust(env, t_arr):
+                nonlocal arrived,abandoned,chatbot_n,human_n
+                arrived += 1
+                h = int((t_arr%1440)//60)
+                is_pk = h in PEAK_HOURS
+                if sim_defl>0 and np.random.random()<sim_defl:
+                    yield env.timeout(np.random.exponential(0.5))
+                    chatbot_n+=1; waits.append(0.0); costs.append(sim_cb_cost)
+                    return
+                pat = np.random.exponential(55.0)
+                with agents.request() as req:
+                    res = yield req|env.timeout(pat)
+                    if req in res:
+                        w = env.now-t_arr
+                        yield env.timeout(np.random.exponential(sim_handle))
+                        waits.append(w); costs.append(49.95)
+                        if is_pk: pk_waits.append(w)
+                        human_n+=1
+                    else:
+                        abandoned+=1
+
+            def arr_gen(env):
+                for day in range(sim_days):
+                    for m in range(1440):
+                        r = get_rate(m, daily_v)
+                        n = np.random.poisson(r)
+                        for _ in range(n):
+                            env.process(cust(env, env.now))
+                        yield env.timeout(1)
+                        if m%60==0:
+                            q_log.append(len(agents.queue))
+                    prog.progress(int((day+1)/sim_days*85),
+                                  text=f"Simulating day {day+1}/{sim_days}...")
+
+            env.process(arr_gen(env))
+            env.run()
+            prog.progress(100, text="✅ Done!")
+
+            scale       = 30/sim_days
+            served      = max(chatbot_n+human_n,1)
+            avg_wait    = np.mean(waits) if waits else 0
+            pk_wait     = np.mean(pk_waits) if pk_waits else avg_wait
+            aband_pct   = abandoned/max(arrived,1)*100
+            defl_pct    = chatbot_n/max(arrived,1)*100
+            mo_cost     = sum(costs)*scale
+            baseline_mo = sim_vol*49.95
+            mo_saving   = baseline_mo-mo_cost
+            ann_saving  = mo_saving*12
+            fcr_sim     = (chatbot_n*0.93+human_n*0.562)/served*100 if sim_defl>0 else 56.2
+
+            st.divider()
+            st.subheader("📊 Simulation Results")
+            m1,m2,m3,m4,m5,m6 = st.columns(6)
+            m1.metric("Peak Wait",     f"{pk_wait:.1f} min",
+                      f"{8.2-pk_wait:+.1f} vs baseline")
+            m2.metric("Abandonment",   f"{aband_pct:.1f}%",
+                      f"{9.0-aband_pct:+.1f}pp")
+            m3.metric("Deflection",    f"{defl_pct:.1f}%")
+            m4.metric("FCR Rate",      f"{fcr_sim:.1f}%",
+                      f"{fcr_sim-56.2:+.1f}pp")
+            m5.metric("Monthly Cost",  f"EGP {mo_cost/1e6:.2f}M",
+                      f"-EGP {mo_saving/1e6:.2f}M")
+            m6.metric("Annual Saving", f"EGP {ann_saving/1e6:.1f}M")
+
+            c1,c2 = st.columns(2)
+            with c1:
+                kn = ["Peak Wait\n(min)","Abandon\n(%)","FCR\n(%)","Monthly Cost\n(EGP M)"]
+                bv = [8.2, 9.0, 56.2, 6.24]
+                av = [pk_wait, aband_pct, fcr_sim, mo_cost/1e6]
+                fig = go.Figure()
+                fig.add_trace(go.Bar(name="Baseline",x=kn,y=bv,
+                                     marker_color=RED,opacity=0.85))
+                fig.add_trace(go.Bar(name="Simulated",x=kn,y=av,
+                                     marker_color=TEAL,opacity=0.85))
+                fig.update_layout(title="KPI: Baseline vs Simulated",
+                                  barmode="group",height=380)
+                st.plotly_chart(fig,use_container_width=True)
+            with c2:
+                if q_log:
+                    fig = px.area(x=list(range(len(q_log))),y=q_log,
+                                  title="Queue Length Over Time",
+                                  labels={"x":"Hour","y":"Customers in Queue"},
+                                  color_discrete_sequence=[TEAL])
+                    fig.update_layout(height=380)
+                    st.plotly_chart(fig,use_container_width=True)
+
+    # ── TAB 2: SCENARIO COMPARISON ────────────────────────────────
+    with tab2:
+        st.subheader("3-Scenario Comparison — A (Baseline) | B (Chatbot) | C (Optimized)")
+        if sim_results:
+            sc_cfg = [("A","Baseline — No Chatbot",RED,"45 agents | 0% deflection | Task 2 calibrated"),
+                      ("B","Chatbot Deployed",TEAL,"45 agents | 65.9% deflection | SimPy simulated"),
+                      ("C","Optimized Model",GREEN,"38 agents | 75% deflection | SimPy + RPA")]
+            cols = st.columns(3)
+            for col,(sc,lbl,col_c,desc) in zip(cols,sc_cfg):
+                r = sim_results[sc]
+                col.markdown(f"""
+                <div style='background:{col_c};padding:14px;border-radius:10px;color:white;margin-bottom:8px;'>
+                <b style='font-size:14px;'>{lbl}</b><br>
+                <small style='opacity:0.85;'>{desc}</small><br><br>
+                ⏱️ Peak Wait: <b>{r['avg_peak_wait_min']} min</b><br>
+                🚪 Abandonment: <b>{r['abandon_rate_pct']}%</b><br>
+                🎯 FCR Rate: <b>{r['fcr_rate_pct']}%</b><br>
+                📋 SLA: <b>{r['sla_compliance_pct']}%</b><br>
+                💰 Monthly Cost: <b>EGP {r['monthly_cost_egp']/1e6:.2f}M</b><br>
+                💹 Annual Saving: <b>EGP {r['annual_saving_egp']/1e6:.1f}M</b>
+                </div>""", unsafe_allow_html=True)
+
+            st.divider()
+            c1,c2 = st.columns(2)
+            with c1:
+                kpis_k = ["avg_peak_wait_min","abandon_rate_pct","fcr_rate_pct","sla_compliance_pct"]
+                kpis_l = ["Peak Wait (min)","Abandonment (%)","FCR Rate (%)","SLA Compliance (%)"]
+                fig = go.Figure()
+                for sc,lbl,col_c in [("A","Baseline",RED),("B","Chatbot",TEAL),("C","Optimized",GREEN)]:
+                    fig.add_trace(go.Bar(name=lbl,x=kpis_l,
+                                         y=[sim_results[sc][k] for k in kpis_k],
+                                         marker_color=col_c,opacity=0.85))
+                fig.update_layout(title="Core KPI Comparison",barmode="group",height=400)
+                st.plotly_chart(fig,use_container_width=True)
+            with c2:
+                sc_l  = ["A (Baseline)","B (Chatbot)","C (Optimized)"]
+                mo_cs = [sim_results[sc]["monthly_cost_egp"]/1e6 for sc in ["A","B","C"]]
+                fig   = px.bar(x=sc_l,y=mo_cs,color=sc_l,
+                               color_discrete_sequence=[RED,TEAL,GREEN],
+                               title="Monthly Service Cost (EGP M)",
+                               labels={"x":"Scenario","y":"EGP M"})
+                fig.update_layout(showlegend=False,height=400)
+                for i,v in enumerate(mo_cs):
+                    fig.add_annotation(x=i,y=v/2,text=f"EGP {v:.2f}M",
+                                       showarrow=False,font_color="white",
+                                       font_size=13,font_weight="bold")
+                st.plotly_chart(fig,use_container_width=True)
+
+            # 5-year projection
+            st.subheader("📈 5-Year Financial Projection")
+            years  = list(range(6))
+            inv    = 4.5
+            ann_b  = sim_results["B"]["annual_saving_egp"]/1e6
+            ann_c  = sim_results["C"]["annual_saving_egp"]/1e6
+            maint  = 0.5
+            cum_b  = [-inv]+[ann_b*y-maint*max(y-1,0)-inv for y in range(1,6)]
+            cum_c  = [-inv]+[ann_c*y-maint*max(y-1,0)-inv for y in range(1,6)]
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=years,y=cum_b,mode="lines+markers",
+                                     name="Scenario B",line_color=TEAL,line_width=2.5,
+                                     marker_size=8))
+            fig.add_trace(go.Scatter(x=years,y=cum_c,mode="lines+markers",
+                                     name="Scenario C",line_color=GREEN,line_width=2.5,
+                                     marker_size=8))
+            fig.add_hline(y=0,line_color=NAVY,line_dash="dash",
+                          annotation_text="Break-even")
+            fig.update_layout(title="Cumulative Net Position (EGP M)",
+                              xaxis_title="Year",yaxis_title="EGP M",height=380,
+                              xaxis_tickvals=years,
+                              xaxis_ticktext=[f"Y{y}" for y in years])
+            st.plotly_chart(fig,use_container_width=True)
+
+    # ── TAB 3: SENSITIVITY ANALYSIS ───────────────────────────────
+    with tab3:
+        st.subheader("Sensitivity Analysis — 55 Combinations")
+        st.caption("Annual saving (EGP M) across deflection rate × monthly volume")
+        if sens_df is not None:
+            c1,c2 = st.columns(2)
+            with c1:
+                pivot = sens_df.pivot(index="Volume",columns="Deflection_Pct",
+                                      values="Annual_Saving_M")
+                fig = px.imshow(pivot,color_continuous_scale="RdYlGn",
+                                aspect="auto",
+                                labels=dict(x="Deflection (%)",y="Volume",
+                                           color="Annual Saving (EGP M)"),
+                                title="Annual Saving Heatmap (EGP M)")
+                fig.update_layout(height=450)
+                st.plotly_chart(fig,use_container_width=True)
+            with c2:
+                vol_opt = st.selectbox("Filter by Volume",
+                    [80000,100000,125000,150000,175000],index=2)
+                sub = sens_df[sens_df["Volume"]==vol_opt]
+                fig = px.line(sub,x="Deflection_Pct",y="Annual_Saving_M",
+                              markers=True,color_discrete_sequence=[TEAL],
+                              title=f"Annual Saving at {vol_opt:,} Monthly Volume",
+                              labels={"Deflection_Pct":"Deflection (%)","Annual_Saving_M":"EGP M"})
+                fig.add_vline(x=65.9,line_color=RED,line_dash="dash",
+                              annotation_text="Current 65.9%",annotation_position="top right")
+                fig.add_vline(x=75.0,line_color=GREEN,line_dash="dash",
+                              annotation_text="Target 75%",annotation_position="top left")
+                fig.update_layout(height=450)
+                st.plotly_chart(fig,use_container_width=True)
+
+            st.subheader("💰 Break-Even Calculator")
+            b1,b2,b3 = st.columns(3)
+            with b1:
+                be_defl = st.slider("Deflection Rate (%)",40,90,66,key="be_d")/100
+                be_vol  = st.number_input("Monthly Volume",50000,200000,125000,5000,key="be_v")
+            mo_c   = be_vol*(be_defl*4+(1-be_defl)*49.95)
+            mo_s   = be_vol*49.95-mo_c
+            ann_s  = mo_s*12
+            pb_mo  = 4500000/max(ann_s,1)*12
+            with b2:
+                st.metric("Monthly Saving",f"EGP {mo_s:,.0f}")
+                st.metric("Annual Saving", f"EGP {ann_s/1e6:.2f}M")
+            with b3:
+                st.metric("Payback Period",f"{pb_mo:.1f} months")
+                st.metric("5-Year Net ROI", f"EGP {(ann_s*5-4500000)/1e6:.1f}M")
+
+    # ── TAB 4: QUEUE DYNAMICS ─────────────────────────────────────
+    with tab4:
+        st.subheader("Queue Length Dynamics — 30-Day Simulation")
+        if queue_data:
+            sc_choice = st.selectbox("Select Scenario",
+                ["A — Baseline (No Chatbot)",
+                 "B — Chatbot Deployed",
+                 "C — Optimized Model"])
+            sc_k = sc_choice[0]
+            ql   = queue_data.get(sc_k,[])
+            if ql:
+                if isinstance(ql[0],list):
+                    xs = [t[0]/1440 for t in ql]
+                    ys = [t[1] for t in ql]
+                else:
+                    xs = list(range(len(ql)))
+                    ys = ql
+
+                col_map = {"A":RED,"B":TEAL,"C":GREEN}
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=xs,y=ys,fill="tozeroy",
+                                         line=dict(color=col_map[sc_k],width=1.5),
+                                         fillcolor=f"rgba(0,123,138,0.15)"
+                                                   if sc_k!="A" else "rgba(204,0,0,0.15)",
+                                         name=f"Scenario {sc_k}"))
+                avg_q = np.mean(ys)
+                fig.add_hline(y=avg_q,line_color=NAVY,line_dash="dash",
+                              annotation_text=f"Avg: {avg_q:.1f}")
+                fig.update_layout(
+                    title=f"Queue Length — Scenario {sc_k} (30-Day Simulation)",
+                    xaxis_title="Simulation Day",
+                    yaxis_title="Customers in Queue",height=450)
+                st.plotly_chart(fig,use_container_width=True)
+
+                m1,m2,m3,m4 = st.columns(4)
+                m1.metric("Avg Queue Length",f"{avg_q:.1f}")
+                m2.metric("Max Queue",       f"{max(ys):.0f}")
+                m3.metric("Min Queue",       f"{min(ys):.0f}")
+                m4.metric("Std Dev",         f"{np.std(ys):.1f}")
+
+                with st.expander("📋 Model Parameters — Click to Expand"):
+                    params = {
+                        "Model":           "M/M/c/K Discrete-Event (SimPy 4.1)",
+                        "Arrivals":        "Time-varying Poisson — peak hours 11-13 & 17-20",
+                        "Service Time":    "Exponential(μ=10 min) — human agents",
+                        "Chatbot Service": "Exponential(μ=0.5 min) — near-instant",
+                        "Patience":        "Exponential(μ=55 min) — calibrated to 9% abandon",
+                        "Duration":        "30 days × 3 runs averaged",
+                        "Scenario A":      "Calibrated to Task 2 KPIs (standard MLE practice)",
+                        "Scenario B":      "65.9% deflection | 45 agents | SimPy simulated",
+                        "Scenario C":      "75% deflection | 38 agents | SimPy + RPA model",
+                        "Monthly Volume":  "125,000 interactions",
+                        "Random Seed":     "42 (fully reproducible)",
+                    }
+                    df_p = pd.DataFrame(params.items(),columns=["Parameter","Value"])
+                    st.dataframe(df_p,use_container_width=True,hide_index=True)
+
+
 
 # ── Footer ──────────────────────────────────────────────────────────
 st.markdown("---")
