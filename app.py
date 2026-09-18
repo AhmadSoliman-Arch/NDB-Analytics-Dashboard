@@ -152,6 +152,8 @@ with st.sidebar:
     st.markdown(f"""
     <hr style='border-color:{TEAL};'>
     <div style='color:{GRAY};font-size:11px;text-align:center;'>
+      MBA — AI in Business<br>Arab Academy | Sep 2026<br>
+      11 tables | ~106K records
     </div>""", unsafe_allow_html=True)
 
 # ── Computed globals ────────────────────────────────────────────────
@@ -174,7 +176,7 @@ annual_sv  = monthly_sv * 12
 # ══════════════════════════════════════════════════════════════════
 if page == "🏠 Executive Overview":
     st.markdown(f"<h1 style='color:{NAVY};'>🏦 NDB — Executive Analytics Overview</h1>", unsafe_allow_html=True)
-    st.caption("Chatbots for Customer Service Automation")
+    st.caption("Chatbots for Customer Service Automation | MBA AI in Business | Arab Academy 2026")
 
     c1,c2,c3,c4,c5,c6 = st.columns(6)
     c1.metric("Total Customers","500,000","NDB Scale")
@@ -1359,8 +1361,9 @@ elif page == "🔬 Simulation & Scenarios":
             agents  = simpy.Resource(env, capacity=sim_agents)
             daily_v = sim_vol / 30
 
-            waits=[]; pk_waits=[]; costs=[]
-            arrived=0; abandoned=0; chatbot_n=0; human_n=0; q_log=[]
+            waits=[]; pk_waits=[]; costs=[]; q_log=[]
+            # Use mutable dict to avoid nonlocal issues in Streamlit
+            counters = {'arrived':0,'abandoned':0,'chatbot_n':0,'human_n':0}
 
             def get_rate(m, dv):
                 h = m // 60; base = dv/1440
@@ -1372,13 +1375,12 @@ elif page == "🔬 Simulation & Scenarios":
                 else:                    return base*0.5
 
             def cust(env, t_arr):
-                nonlocal arrived,abandoned,chatbot_n,human_n
-                arrived += 1
+                counters['arrived'] += 1
                 h = int((t_arr%1440)//60)
                 is_pk = h in PEAK_HOURS
                 if sim_defl>0 and np.random.random()<sim_defl:
                     yield env.timeout(np.random.exponential(0.5))
-                    chatbot_n+=1; waits.append(0.0); costs.append(sim_cb_cost)
+                    counters['chatbot_n']+=1; waits.append(0.0); costs.append(sim_cb_cost)
                     return
                 pat = np.random.exponential(55.0)
                 with agents.request() as req:
@@ -1388,9 +1390,9 @@ elif page == "🔬 Simulation & Scenarios":
                         yield env.timeout(np.random.exponential(sim_handle))
                         waits.append(w); costs.append(49.95)
                         if is_pk: pk_waits.append(w)
-                        human_n+=1
+                        counters['human_n']+=1
                     else:
-                        abandoned+=1
+                        counters['abandoned']+=1
 
             def arr_gen(env):
                 for day in range(sim_days):
@@ -1410,16 +1412,16 @@ elif page == "🔬 Simulation & Scenarios":
             prog.progress(100, text="✅ Done!")
 
             scale       = 30/sim_days
-            served      = max(chatbot_n+human_n,1)
+            served      = max(counters['chatbot_n']+counters['human_n'],1)
             avg_wait    = np.mean(waits) if waits else 0
             pk_wait     = np.mean(pk_waits) if pk_waits else avg_wait
-            aband_pct   = abandoned/max(arrived,1)*100
-            defl_pct    = chatbot_n/max(arrived,1)*100
+            aband_pct   = counters['abandoned']/max(counters['arrived'],1)*100
+            defl_pct    = counters['chatbot_n']/max(counters['arrived'],1)*100
             mo_cost     = sum(costs)*scale
             baseline_mo = sim_vol*49.95
             mo_saving   = baseline_mo-mo_cost
             ann_saving  = mo_saving*12
-            fcr_sim     = (chatbot_n*0.93+human_n*0.562)/served*100 if sim_defl>0 else 56.2
+            fcr_sim     = (counters['chatbot_n']*0.93+counters['human_n']*0.562)/served*100 if sim_defl>0 else 56.2
 
             st.divider()
             st.subheader("📊 Simulation Results")
