@@ -1322,7 +1322,7 @@ elif page == "🔬 Simulation & Scenarios":
 
     st.markdown(f"<h2 style='color:{NAVY};'>🔬 Simulation & Scenarios — M/M/c/K Queuing Model</h2>",
                 unsafe_allow_html=True)
-    st.caption("SimPy Discrete-Event Simulation | 30 Days × 3 Runs | Calibrated to KPIs |")
+    st.caption("SimPy Discrete-Event Simulation | 30 Days × 5 Runs | Calibrated to Observed KPIs |")
 
     PEAK_HOURS_SIM = [11,12,13,17,18,19,20]
 
@@ -1618,33 +1618,33 @@ elif page == "🔬 Simulation & Scenarios":
                 "KPI": ["Peak Wait (min)","Abandonment (%)","Chatbot Defl. (%)","FCR Rate (%)",
                          "SLA Compliance (%)","Agent Utilization (%)","Monthly Cost (EGP M)","Annual Saving (EGP M)"],
                 "Scenario A": [
-                    sim_results["A"]["avg_peak_wait_min"],
-                    sim_results["A"]["abandon_rate_pct"],
-                    sim_results["A"]["chatbot_defl_pct"],
-                    sim_results["A"]["fcr_rate_pct"],
-                    sim_results["A"]["sla_compliance_pct"],
-                    sim_results["A"]["agent_utilization"],
-                    round(sim_results["A"]["monthly_cost_egp"]/1e6,2),
-                    round(sim_results["A"]["annual_saving_egp"]/1e6,1),
+                    sim_results["A"].get("avg_peak_wait_min",0),
+                    sim_results["A"].get("abandon_rate_pct",0),
+                    sim_results["A"].get("chatbot_defl_pct",0),
+                    sim_results["A"].get("fcr_rate_pct",0),
+                    sim_results["A"].get("sla_compliance_pct",0),
+                    sim_results["A"].get("agent_utilization",0),
+                    round(sim_results["A"].get("monthly_cost_egp",0)/1e6,2),
+                    round(sim_results["A"].get("annual_saving_egp",0)/1e6,1),
                 ],
                 "Scenario B": [
-                    sim_results["B"]["avg_peak_wait_min"],
-                    sim_results["B"]["abandon_rate_pct"],
-                    sim_results["B"]["chatbot_defl_pct"],
-                    sim_results["B"]["fcr_rate_pct"],
-                    sim_results["B"]["sla_compliance_pct"],
-                    sim_results["B"]["agent_utilization"],
-                    round(sim_results["B"]["monthly_cost_egp"]/1e6,2),
+                    sim_results["B"].get("avg_peak_wait_min",0),
+                    sim_results["B"].get("abandon_rate_pct",0),
+                    sim_results["B"].get("chatbot_defl_pct",0),
+                    sim_results["B"].get("fcr_rate_pct",0),
+                    sim_results["B"].get("sla_compliance_pct",0),
+                    sim_results["B"].get("agent_utilization",0),
+                    round(sim_results["B"].get("monthly_cost_egp",0)/1e6,2),
                     round(sim_results["B"].get("annual_saving_egp",0)/1e6,1),
                 ],
                 "Scenario C": [
-                    sim_results["C"]["avg_peak_wait_min"],
-                    sim_results["C"]["abandon_rate_pct"],
-                    sim_results["C"]["chatbot_defl_pct"],
-                    sim_results["C"]["fcr_rate_pct"],
-                    sim_results["C"]["sla_compliance_pct"],
-                    sim_results["C"]["agent_utilization"],
-                    round(sim_results["C"]["monthly_cost_egp"]/1e6,2),
+                    sim_results["C"].get("avg_peak_wait_min",0),
+                    sim_results["C"].get("abandon_rate_pct",0),
+                    sim_results["C"].get("chatbot_defl_pct",0),
+                    sim_results["C"].get("fcr_rate_pct",0),
+                    sim_results["C"].get("sla_compliance_pct",0),
+                    sim_results["C"].get("agent_utilization",0),
+                    round(sim_results["C"].get("monthly_cost_egp",0)/1e6,2),
                     round(sim_results["C"].get("annual_saving_egp",0)/1e6,1),
                 ],
             }
@@ -1775,7 +1775,7 @@ elif page == "🔬 Simulation & Scenarios":
                         "Chatbot Service":     "Exponential(μ=0.5 min) — near-instant",
                         "Customer Patience":   "Exponential(μ=10 peak / 20 off-peak min)",
                         "Simulation Duration": "30 days × 3 runs averaged",
-                        "Scenario A Source":   "Data Analytics observed data — MLE calibrated",
+                        "Scenario A Source":   "Observed data — MLE calibrated",
                         "Scenario B":          "65.9% deflection | 45 agents | SimPy simulated",
                         "Scenario C":          "75% deflection | 38 agents | SimPy + RPA model",
                         "Monthly Volume":      "125,000 interactions",
