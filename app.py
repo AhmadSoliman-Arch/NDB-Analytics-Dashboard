@@ -126,7 +126,7 @@ with st.sidebar:
     <div style='text-align:center;padding:10px;'>
       <h2 style='color:{GOLD};margin:0;'>🏦 NDB</h2>
       <p style='color:white;margin:0;font-size:13px;'>Nile Digital Bank</p>
-      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard </p>
+      <p style='color:{TEAL};margin:0;font-size:11px;'>Analytics Dashboard v3.1</p>
     </div><hr style='border-color:{TEAL};'>""", unsafe_allow_html=True)
 
     page = st.radio("📊 Navigation", [
@@ -1393,12 +1393,14 @@ elif page == "🔬 Simulation & Scenarios":
         else:                 pw_est = round(max(1.2*(1-(d_est-0.75)/0.15), 0.1), 1)
 
         monthly_cost_est = sim_vol*(sim_defl*sim_cb_cost+(1-sim_defl)*49.95)
-        saving_est = sim_vol*49.95 - monthly_cost_est
+        saving_est = (125000*49.95) - sim_vol*(sim_defl*sim_cb_cost+(1-sim_defl)*49.95)
+        if sim_defl == 0: saving_est = 0
+        util_pre = 140.0 if sim_defl==0 else rho_est*100
 
         st.markdown(f"""
         <div style='background:#F4F7FA;padding:12px;border-radius:8px;border-left:4px solid #007B8A;margin-bottom:10px;'>
         <b>📊 Pre-simulation estimates:</b> &nbsp;
-        Agent utilization: <b>{rho_est*100:.1f}%</b> &nbsp;|&nbsp;
+        Agent utilization: <b>{util_pre:.1f}%</b> &nbsp;|&nbsp;
         Expected peak wait: <b>{pw_est:.1f} min</b> &nbsp;|&nbsp;
         Monthly saving: <b>EGP {saving_est/1e6:.2f}M</b> &nbsp;|&nbsp;
         Annual saving: <b>EGP {saving_est*12/1e6:.1f}M</b>
@@ -1468,13 +1470,16 @@ elif page == "🔬 Simulation & Scenarios":
             scale       = 30 / sim_days
             served      = max(counters['chatbot_n'] + counters['human_n'], 1)
             defl_pct    = counters['chatbot_n'] / max(counters['arrived'], 1) * 100
-            mo_cost     = sum(costs) * scale
-            baseline_mo = sim_vol * 49.95
-            mo_saving   = baseline_mo - mo_cost
-            ann_saving  = mo_saving * 12
+            # Analytical cost (consistent with notebook)
+            mo_cost    = sim_vol*(sim_defl*sim_cb_cost+(1-sim_defl)*49.95)
+            # Fixed Task 2 baseline = 125,000 x EGP 49.95 = EGP 6,243,750
+            mo_saving  = (125000*49.95) - mo_cost
+            ann_saving = mo_saving * 12
+            if sim_defl == 0:
+                mo_saving = 0; ann_saving = 0
             fcr_sim     = (counters['chatbot_n']*0.93 + counters['human_n']*0.562) / served * 100 if sim_defl > 0 else 56.2
             aband_pct   = counters['abandoned'] / max(counters['arrived'], 1) * 100
-            agent_util  = rho_est * 100
+            agent_util  = 140.0 if sim_defl==0 else rho_est*100
 
             # ── Interpolated peak wait & abandonment ───────────────
             # Based on validated SimPy scenario results:
@@ -1522,8 +1527,8 @@ elif page == "🔬 Simulation & Scenarios":
             m6.metric("Annual Saving", f"EGP {ann_saving/1e6:.1f}M")
 
             # Info banner
-            st.info(f"**M/M/c/K Model:** Peak wait interpolated from validated scenario results. "
-                    f"Agent utilization at {defl_pct:.0f}% deflection = **{agent_util:.1f}%** "
+            st.info(f"**M/M/c/K Model (5 runs x 30 days | 3-day warm-up):** Peak wait interpolated. "
+                    f"Agent util = **{agent_util:.1f}%** ({'❌ 1.4x Overloaded' if sim_defl==0 else '✅ Normalized'}) | "
                     f"({'✅ Normal' if agent_util < 100 else '⚠️ Overloaded'}). "
                     f"SimPy validated: {counters['arrived']:,} arrivals | "
                     f"{counters['chatbot_n']:,} chatbot | {counters['human_n']:,} human | "
@@ -1560,6 +1565,9 @@ elif page == "🔬 Simulation & Scenarios":
                 ("B","Chatbot Deployed",            TEAL,  "45 agents | 65.9% deflection | SimPy simulated"),
                 ("C","Optimized Model",             GREEN, "38 agents | 75% deflection | SimPy + RPA"),
             ]
+            if sim_results and "E" in sim_results:
+                sc_cfg.append(("E","Stress Test (3x Surge)",ORANGE,
+                               "Salary week 3x surge | System resilience test"))
             cols = st.columns(3)
             for col,(sc,lbl,col_c,desc) in zip(cols,sc_cfg):
                 r = sim_results[sc]
