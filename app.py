@@ -999,7 +999,7 @@ elif page == "📈 KPI Projections":
 
     c1,c2,c3=st.columns(3)
     c1.metric("📉 Annual Saving",f"EGP {annual_sv/1e6:.1f}M","Projected")
-    c2.metric("💹 Payback Period","< 18 months","On EGP 3–5M investment")
+    c2.metric("💹 Payback Period",f"{4.5e6*12/max(annual_sv,1):.1f} months","On EGP 4.5M investment")
     c3.metric("🚀 Chatbot ROI",f"{annual_sv/4000000*100:.0f}%+","Year 1 return")
 
 # ══════════════════════════════════════════════════════════════════
