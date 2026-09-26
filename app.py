@@ -13,8 +13,8 @@ from plotly.subplots import make_subplots
 import sqlite3, os
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.model_selection import train_test_split, cross_val_score, cross_val_predict
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
 from sklearn.tree import DecisionTreeClassifier
 
 st.set_page_config(page_title="NDB Analytics Dashboard", page_icon="🏦",
@@ -698,20 +698,21 @@ elif page == "🤖 Predictive Analytics":
     tab1,tab2,tab3 = st.tabs(["🎯 FCR Prediction","📋 SLA Breach Prediction","⚠️ Churn Risk"])
 
     with tab1:
-        st.subheader("Random Forest — FCR Prediction Model")
+        st.subheader("Random Forest — FCR Prediction Model (Pre-Interaction Triage)")
         df_ml=intr[['Wait_Time_Minutes','Is_Peak_Hour','Interaction_Channel',
-                    'Use_Case_Category','Handle_Time_Minutes','Cost_Per_Interaction',
+                    'Use_Case_Category',
                     'First_Contact_Resolved']].dropna().copy()
         df_ml['Is_Peak_Hour']=df_ml['Is_Peak_Hour'].astype(int)
         df_ml['First_Contact_Resolved']=df_ml['First_Contact_Resolved'].astype(int)
         le_ch=LabelEncoder(); le_uc=LabelEncoder()
         df_ml['Channel_Enc']=le_ch.fit_transform(df_ml['Interaction_Channel'])
         df_ml['UseCase_Enc']=le_uc.fit_transform(df_ml['Use_Case_Category'])
-        feats=['Wait_Time_Minutes','Is_Peak_Hour','Channel_Enc','UseCase_Enc',
-               'Handle_Time_Minutes','Cost_Per_Interaction']
+        feats=['Wait_Time_Minutes','Is_Peak_Hour','Channel_Enc','UseCase_Enc']
         X=df_ml[feats]; y=df_ml['First_Contact_Resolved']
         class_dist=y.value_counts()
-        st.caption(f"Dataset: Resolved (1): {class_dist.get(1,0):,} | Not Resolved (0): {class_dist.get(0,0):,}")
+        st.caption(f"Dataset: Resolved (1): {class_dist.get(1,0):,} | Not Resolved (0): {class_dist.get(0,0):,} "
+                   f"— features restricted to signals known before resolution (channel, use case, wait time, "
+                   f"peak hour), so this model is usable for real-time Smart Triage routing.")
         if y.nunique()==1:
             st.warning("Single class detected — showing use case analysis instead")
             uc_c=df_ml['Use_Case_Category'].value_counts().reset_index()
@@ -735,7 +736,7 @@ elif page == "🤖 Predictive Analytics":
             c1,c2=st.columns(2)
             with c1:
                 fi=pd.DataFrame({'Feature':['Wait Time','Peak Hour','Channel',
-                                            'Use Case','Handle Time','Cost'],
+                                            'Use Case'],
                                  'Importance':clf.feature_importances_}).sort_values('Importance')
                 fig=px.bar(fi,x='Importance',y='Feature',orientation='h',
                            color='Importance',color_continuous_scale='Teal',
@@ -775,9 +776,20 @@ elif page == "🤖 Predictive Analytics":
             clf_s=RandomForestClassifier(n_estimators=100,class_weight='balanced',random_state=42)
             clf_s.fit(Xs,ys)
             cv_s=cross_val_score(clf_s,Xs,ys,cv=5,scoring='accuracy').mean()
-            c1,c2=st.columns(2)
-            c1.metric("SLA Model CV Accuracy",f"{cv_s:.1%}")
+            y_pred_s=cross_val_predict(clf_s,Xs,ys,cv=5)
+            prec_s,rec_s,f1_s,_=precision_recall_fscore_support(ys,y_pred_s,average=None,labels=[0,1])
+            naive_base=max(ys.mean(),1-ys.mean())
+            c1,c2,c3=st.columns(3)
+            c1.metric("SLA Model CV Accuracy",f"{cv_s:.1%}",
+                      f"{(cv_s-naive_base)*100:+.1f}pp vs. {naive_base:.1%} naive baseline")
             c2.metric("Breach Rate in Data",f"{ys.mean()*100:.1f}%")
+            c3.metric("Breach Recall (Class 1)",f"{rec_s[1]:.1%}",
+                      "of true breaches caught")
+            st.caption(f"Class-balanced training trades raw accuracy for breach detection: "
+                       f"No-Breach — precision {prec_s[0]:.1%}, recall {rec_s[0]:.1%}, F1 {f1_s[0]:.1%} | "
+                       f"Breach — precision {prec_s[1]:.1%}, recall {rec_s[1]:.1%}, F1 {f1_s[1]:.1%}. "
+                       f"Accuracy alone understates this model, since a naive always-'no breach' rule "
+                       f"would score {naive_base:.1%} while catching zero real breaches.")
             c1,c2,c3=st.columns(3)
             with c1:
                 bp=comp.groupby('Complaint_Priority')['SLA_Breached'].mean()*100
@@ -814,7 +826,7 @@ elif page == "🤖 Predictive Analytics":
         cust_ml['Segment_Enc']=LabelEncoder().fit_transform(cust_ml['Customer_Segment'].fillna('Retail'))
         cust_ml['Digital_Enc']=cust_ml['Digital_User'].astype(int)
         cust_ml['Mobile_Enc']=cust_ml['Mobile_App_User'].astype(int)
-        feats_c=['Age','Segment_Enc','Digital_Enc','Mobile_Enc','CSAT_Score']
+        feats_c=['Age','Segment_Enc','Digital_Enc','Mobile_Enc']
         df_c=cust_ml[feats_c+['Churn_Risk']].dropna()
         Xc=df_c[feats_c]; yc=df_c['Churn_Risk']
         clf_c=RandomForestClassifier(n_estimators=100,class_weight='balanced',random_state=42)
@@ -826,6 +838,10 @@ elif page == "🤖 Predictive Analytics":
         c1.metric("Churn Model Accuracy",f"{cv_c:.1%}")
         c2.metric("High Risk Customers",f"{(proba>0.5).sum():,}")
         c3.metric("Avg Churn Probability",f"{proba.mean()*100:.1f}%")
+        st.caption(f"CSAT_Score is excluded from the feature set because it is also used to define the "
+                   f"Churn_Risk label (CSAT < 3.0), which would leak the target into the predictors. "
+                   f"With CSAT_Score removed, the model relies on Age, Segment, and digital/mobile "
+                   f"engagement only — a fair test of whether churn is predictable from those signals alone.")
         c1,c2,c3=st.columns(3)
         with c1:
             seg_churn=cust_ml.groupby('Customer_Segment')['Churn_Risk'].mean()*100
